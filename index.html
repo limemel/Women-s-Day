@@ -8,6 +8,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Весенняя Аура 2026</title>
 
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -460,6 +461,9 @@
 
         const triggerVibe = (pattern) => {
             try {
+                if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
+                    window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
+                }
                 if (window.navigator && window.navigator.vibrate) {
                     window.navigator.vibrate(pattern);
                 } else if (window.navigator && window.navigator.webkitVibrate) {
@@ -552,6 +556,12 @@
         };
 
         const init = () => {
+            try {
+                if (window.Telegram && window.Telegram.WebApp) {
+                    window.Telegram.WebApp.ready();
+                    window.Telegram.WebApp.expand();
+                }
+            } catch(e) {}
             // const savedIndex = localStorage.getItem('springAuraResultIndex');
             // if (savedIndex !== null) {
             //     showResultView(parseInt(savedIndex, 10));
@@ -559,6 +569,11 @@
         };
 
         const triggerFinishVibe = () => {
+            try {
+                if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
+                    window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+                }
+            } catch(e) {}
             triggerVibe([120, 60, 220]);
         };
 
