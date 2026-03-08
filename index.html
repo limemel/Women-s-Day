@@ -27,14 +27,15 @@
             animation: bounce-short 1.5s ease-in-out infinite;
         }
 
+        /* ИСПРАВЛЕННАЯ АНИМАЦИЯ СЕРДЕЧЕК */
         @keyframes float-up {
-            0% { top: 110%; transform: scale(0.8); opacity: 0; }
-            10% { opacity: 1; }
-            90% { opacity: 0.8; }
-            100% { top: -20%; transform: scale(1.2); opacity: 0; }
+            0% { transform: translateY(0px) scale(0.8); opacity: 0; }
+            10% { transform: translateY(-50px) scale(0.9); opacity: 1; }
+            100% { transform: translateY(-150vh) scale(1.2); opacity: 0; }
         }
         .animate-float-up {
             animation: float-up 5s linear infinite;
+            animation-fill-mode: both; /* Прячет сердечки до начала их движения */
         }
         
         /* Скрытый блок для того, чтобы Tailwind подгрузил все нужные нам цвета градиентов */
@@ -178,6 +179,7 @@
         let requestRef;
         let startTimeRef;
         let showResult = false;
+        let lastVibeProgress = 0; // Для вибрации во время считывания
         const SCAN_DURATION = 3000;
 
         // Элементы DOM
@@ -200,6 +202,20 @@
             }
         };
 
+        // Переход в полноэкранный режим
+        const requestFullscreen = () => {
+            try {
+                const elem = document.documentElement;
+                if (!document.fullscreenElement) {
+                    if (elem.requestFullscreen) {
+                        elem.requestFullscreen().catch(e => {});
+                    } else if (elem.webkitRequestFullscreen) { /* Safari */
+                        elem.webkitRequestFullscreen().catch(e => {});
+                    }
+                }
+            } catch (e) {}
+        };
+
         // Генерация сердечек
         const generateHearts = () => {
             const container = document.getElementById('hearts-container');
@@ -210,6 +226,7 @@
                 const heart = document.createElement('div');
                 heart.className = 'absolute animate-float-up';
                 heart.style.left = `${Math.random() * 100}%`;
+                heart.style.bottom = `-50px`; // Четко фиксируем старт в самом низу за экраном
                 heart.style.width = `${Math.random() * 15 + 15}px`;
                 heart.style.height = `${Math.random() * 15 + 15}px`;
                 heart.style.animationDelay = `${Math.random() * 2}s`;
@@ -257,6 +274,12 @@
             
             progress = Math.min((elapsed / SCAN_DURATION) * 100, 100);
             
+            // Легкая вибрация каждые 5% во время заполнения отпечатка
+            if (progress - lastVibeProgress >= 5) {
+                triggerVibe(15);
+                lastVibeProgress = progress;
+            }
+            
             // Обновляем визуал сканера
             filledFingerprint.style.clipPath = `inset(${100 - progress}% 0 0 0)`;
             if(progress > 0 && progress < 100) {
@@ -277,9 +300,11 @@
             if (e && e.preventDefault && e.type !== 'mousedown') e.preventDefault();
             if (showResult) return;
 
+            requestFullscreen(); // Открываем на весь экран при нажатии
             triggerVibe(50);
             isScanning = true;
             progress = 0;
+            lastVibeProgress = 0;
             startTimeRef = null;
             
             pulse1.classList.remove('hidden');
@@ -313,7 +338,7 @@
 
         const finishScanning = () => {
             isScanning = false;
-            triggerVibe([100, 50, 100]);
+            triggerVibe([100, 50, 100]); // Длинная вибрация при успешном сканировании
             
             const randomIndex = Math.floor(Math.random() * AURA_PREDICTIONS.length);
             
@@ -322,7 +347,7 @@
             
             setTimeout(() => {
                 showResultView(randomIndex);
-                triggerVibe([50, 100, 200]);
+                triggerVibe([100, 50, 300]); // Ярко выраженная вибрация при появлении предсказания
             }, 600);
         };
 
