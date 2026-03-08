@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Моя Волшебная Книга</title>
+    
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/page-flip/dist/js/page-flip.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+    <style>
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            overflow: hidden; 
+            background: radial-gradient(circle at center, #2b2b36 0%, #13131a 100%);
+            touch-action: none;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: white;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        #rotate-prompt {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            background: #13131a; z-index: 100; text-align: center; padding: 20px;
+        }
+
+        .rotate-icon {
+            width: 64px; height: 64px; margin-bottom: 20px;
+            animation: rotatePhone 2s ease-in-out infinite;
+        }
+
+        @keyframes rotatePhone {
+            0% { transform: rotate(0deg); }
+            50% { transform: rotate(-90deg); }
+            100% { transform: rotate(-90deg); }
+        }
+
+        #book-wrapper {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            display: flex; justify-content: center; align-items: center;
+            padding: 10px; opacity: 0; transition: opacity 1s;
+        }
+
+        @media screen and (orientation: portrait) {
+            #rotate-prompt { display: flex; }
+            #book-wrapper, #loading-screen { display: none !important; }
+        }
+
+        @media screen and (orientation: landscape) {
+            #rotate-prompt { display: none; }
+        }
+
+        .flip-book { 
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7); 
+        }
+
+        .page {
+            background-color: #fff; 
+            overflow: hidden; 
+            position: relative;
+            transform: translateZ(0);
+            -webkit-transform: translateZ(0);
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            will-change: transform;
+        }
+
+        .page img {
+            width: 100%;
+            height: 100%;
+            object-fit: fill; 
+            pointer-events: none; 
+            display: block;
+        }
+
+        .page.--left { border-right: 0; box-shadow: inset -10px 0 30px -10px rgba(0, 0, 0, 0.3); }
+        .page.--right { border-left: 0; box-shadow: inset 10px 0 30px -10px rgba(0, 0, 0, 0.3); }
+
+        #loading-screen {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            z-index: 50; background: radial-gradient(circle at center, #2b2b36 0%, #13131a 100%);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="rotate-prompt">
+        <svg class="rotate-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 10a8 8 0 0116 0"></path></svg>
+        <h2 class="text-2xl font-bold mb-2">Поверните телефон</h2>
+        <p class="text-gray-400">Пожалуйста, переверните устройство горизонтально.</p>
+    </div>
+
+    <div id="loading-screen">
+        <div class="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-indigo-400 mb-6"></div>
+        <p id="loading-text" class="text-indigo-200 text-lg font-medium">Создаём магию...</p>
+    </div>
+
+    <div id="book-wrapper">
+        <div class="flip-book" id="flip-book"></div>
+    </div>
+
+    <script>
+        // Блокировка шторки Telegram
+        if (window.Telegram && window.Telegram.WebApp) {
+            window.Telegram.WebApp.ready();
+            window.Telegram.WebApp.expand(); 
+            window.Telegram.WebApp.setHeaderColor('#13131a'); 
+            
+            if (window.Telegram.WebApp.disableVerticalSwipes) {
+                window.Telegram.WebApp.disableVerticalSwipes();
+            }
+            window.Telegram.WebApp.isClosingConfirmationEnabled = true;
+        }
+
+        document.addEventListener('touchmove', function(e) {
+            e.preventDefault();
+        }, { passive: false });
+
+
+        const PDF_URL = './book.pdf'; 
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        let pageFlipInstance = null;
+
+        async function initBook() {
+            const flipBookDiv = document.getElementById('flip-book');
+            const loadingScreen = document.getElementById('loading-screen');
+            const bookWrapper = document.getElementById('book-wrapper');
+            const loadingText = document.getElementById('loading-text');
+
+            try {
+                const loadingTask = pdfjsLib.getDocument({
+                    url: PDF_URL,
+                    cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/',
+                    cMapPacked: true
+                });
+                const pdf = await loadingTask.promise;
+                const numPages = pdf.numPages;
+
+                // Берем пропорции не первой страницы (вдруг она узкая), а второй, где точно разворот!
+                const samplePage = await pdf.getPage(numPages > 1 ? 2 : 1);
+                const sampleViewport = samplePage.getViewport({ scale: 1.0 });
+                const aspectRatio = sampleViewport.height / sampleViewport.width;
+                
+                const baseWidth = window.innerWidth > window.innerHeight ? window.innerWidth * 0.8 : 800;
+                const baseHeight = baseWidth * aspectRatio;
+
+                for (let i = 1; i <= numPages; i++) {
+                    loadingText.innerText = `Рисуем страницу ${i} из ${numPages}...`;
+                    const page = await pdf.getPage(i);
+                    
+                    const safeScale = Math.min(1.0, 1000 / sampleViewport.width);
+                    const viewport = page.getViewport({ scale: safeScale });
+                    
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    canvas.width = viewport.width;
+                    canvas.height = viewport.height;
+
+                    context.fillStyle = '#ffffff';
+                    context.fillRect(0, 0, canvas.width, canvas.height);
+
+                    await page.render({ canvasContext: context, viewport: viewport }).promise;
+                    
+                    const imageUrl = canvas.toDataURL('image/jpeg', 0.7);
+
+                    const pageDiv = document.createElement('div');
+                    pageDiv.className = 'page';
+                    
+                    const imgElement = document.createElement('img');
+                    imgElement.src = imageUrl;
+                    pageDiv.appendChild(imgElement);
+                    
+                    flipBookDiv.appendChild(pageDiv);
+                }
+
+                loadingText.innerText = "Открываем...";
+
+                pageFlipInstance = new St.PageFlip(flipBookDiv, {
+                    width: baseWidth, 
+                    height: baseHeight, 
+                    size: "stretch", 
+                    minWidth: 300, maxWidth: 2000, 
+                    minHeight: 200, maxHeight: 1500,
+                    
+                    // === ЖЕСТКИЕ НАСТРОЙКИ, КОТОРЫЕ ИСПРАВЛЯЮТ ГЛЮКИ ===
+                    showCover: false, // НИКАКИХ обложек, из-за них съезжали клики!
+                    usePortrait: true, // ЖЕСТКО показываем ровно 1 лист (разворот) за раз!
+                    // ====================================================
+
+                    mobileScrollSupport: false,
+                    maxShadowOpacity: 0.3, 
+                    drawShadow: true
+                });
+
+                pageFlipInstance.loadFromHTML(document.querySelectorAll('.page'));
+
+                loadingScreen.style.opacity = '0';
+                setTimeout(() => {
+                    loadingScreen.style.display = 'none';
+                    bookWrapper.style.opacity = '1';
+                }, 500);
+
+            } catch (error) {
+                console.error(error);
+                loadingText.innerHTML = `<span class="text-red-400 text-sm font-bold">Упс, ошибка: ${error.message}</span>`;
+            }
+        }
+
+        // Клики тоже обновила: теперь 1 клик = 1 страница!
+        document.getElementById('book-wrapper').addEventListener('click', (e) => {
+            if (!pageFlipInstance) return;
+            const clickX = e.clientX;
+            const screenWidth = window.innerWidth;
+            
+            // Защита от двойных нажатий (дребезга)
+            if (pageFlipInstance.getFlipState() !== 'read') return;
+
+            if (clickX > screenWidth / 2) {
+                pageFlipInstance.flipNext(); // 1 клик вперед
+            } else {
+                pageFlipInstance.flipPrev(); // 1 клик назад
+            }
+        });
+
+        initBook();
+    </script>
+</body>
+</html>
