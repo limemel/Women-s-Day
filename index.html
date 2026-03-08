@@ -243,10 +243,11 @@
 
         // Проверка сохраненного результата
         const init = () => {
-            const savedIndex = localStorage.getItem('springAuraResultIndex');
-            if (savedIndex !== null) {
-                showResultView(parseInt(savedIndex, 10));
-            }
+            // ВРЕМЕННО ОТКЛЮЧЕНО ДЛЯ ТЕСТОВ:
+            // const savedIndex = localStorage.getItem('springAuraResultIndex');
+            // if (savedIndex !== null) {
+            //     showResultView(parseInt(savedIndex, 10));
+            // }
         };
 
         // Логика сканирования
@@ -315,7 +316,9 @@
             triggerVibe([100, 50, 100]);
             
             const randomIndex = Math.floor(Math.random() * AURA_PREDICTIONS.length);
-            localStorage.setItem('springAuraResultIndex', randomIndex.toString());
+            
+            // ВРЕМЕННО ОТКЛЮЧЕНО ДЛЯ ТЕСТОВ:
+            // localStorage.setItem('springAuraResultIndex', randomIndex.toString());
             
             setTimeout(() => {
                 showResultView(randomIndex);
