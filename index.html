@@ -51,9 +51,6 @@
     <div class="absolute top-[-10%] left-[-10%] w-96 h-96 bg-white/40 rounded-full blur-3xl opacity-50 animate-pulse"></div>
     <div class="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-white/40 rounded-full blur-3xl opacity-50 animate-pulse" style="animation-delay: 1s;"></div>
 
-    <!-- Контейнер для летящих сердечек (заполняется через JS) -->
-    <div id="hearts-container" class="fixed inset-0 pointer-events-none z-0 overflow-hidden hidden"></div>
-
     <!-- Glassmorphism Карточка -->
     <div class="relative w-full max-w-md bg-white/30 backdrop-blur-xl border border-white/40 shadow-2xl rounded-[2.5rem] p-8 text-center flex flex-col items-center justify-center min-h-[500px] z-10 overflow-hidden">
         
@@ -74,17 +71,37 @@
                 <div id="pulse-1" class="absolute w-32 h-32 bg-pink-300/30 rounded-full animate-ping opacity-75 pointer-events-none hidden"></div>
                 <div id="pulse-2" class="absolute w-40 h-40 border border-pink-400/40 rounded-full animate-pulse pointer-events-none hidden"></div>
 
-                <!-- Иконка отпечатка (реалистичный скан с заливкой) -->
+                <!-- Иконка отпечатка (реалистичный скан с картинки) -->
                 <div id="fingerprint-wrapper" class="relative w-[120px] h-[120px] rounded-full flex items-center justify-center transition-all duration-300 pointer-events-none scale-100">
                     
-                    <!-- Серый фоновый отпечаток -->
-                    <svg class="absolute text-white/40 drop-shadow-sm pointer-events-none" width="100" height="100" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-.26 4"/><path d="M15.29 9.34a5 5 0 0 0-8 0"/><path d="M18.82 7.59a9 9 0 0 0-14.47 0"/><path d="M21.71 6.51A12 12 0 0 0 2.29 6.51"/><path d="M9 13.5a4 4 0 0 1 7.82 1.15"/><path d="M16.82 14.65a4 4 0 0 0-7.82-1.15"/>
+                    <!-- Серый фоновый отпечаток (берем твою картинку и фильтруем в полупрозрачный белый) -->
+                    <svg class="absolute drop-shadow-sm pointer-events-none" width="100%" height="100%" viewBox="0 0 612 612">
+                        <defs>
+                            <filter id="gray-fingerprint">
+                                <feColorMatrix type="matrix" values="
+                                    0 0 0 0 1
+                                    0 0 0 0 1
+                                    0 0 0 0 1
+                                    -0.1333 -0.1333 -0.1333 0 0.4
+                                "/>
+                            </filter>
+                        </defs>
+                        <image crossorigin="anonymous" href="https://i.postimg.cc/50JpR4q3/istockphoto-1480047786-612x612.jpg" width="612" height="612" filter="url(#gray-fingerprint)" />
                     </svg>
                     
-                    <!-- Заполняющийся розовый отпечаток -->
-                    <svg id="filled-fingerprint" class="absolute text-pink-500 drop-shadow-[0_0_12px_rgba(236,72,153,0.8)] pointer-events-none" style="clip-path: inset(100% 0 0 0);" width="100" height="100" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-.26 4"/><path d="M15.29 9.34a5 5 0 0 0-8 0"/><path d="M18.82 7.59a9 9 0 0 0-14.47 0"/><path d="M21.71 6.51A12 12 0 0 0 2.29 6.51"/><path d="M9 13.5a4 4 0 0 1 7.82 1.15"/><path d="M16.82 14.65a4 4 0 0 0-7.82-1.15"/>
+                    <!-- Заполняющийся розовый отпечаток (берем картинку и фильтруем в неоновый розовый) -->
+                    <svg id="filled-fingerprint" class="absolute drop-shadow-[0_0_12px_rgba(236,72,153,0.8)] pointer-events-none" style="clip-path: inset(100% 0 0 0);" width="100%" height="100%" viewBox="0 0 612 612">
+                        <defs>
+                            <filter id="pink-fingerprint">
+                                <feColorMatrix type="matrix" values="
+                                    0 0 0 0 0.925
+                                    0 0 0 0 0.282
+                                    0 0 0 0 0.600
+                                    -0.3333 -0.3333 -0.3333 0 1
+                                "/>
+                            </filter>
+                        </defs>
+                        <image crossorigin="anonymous" href="https://i.postimg.cc/50JpR4q3/istockphoto-1480047786-612x612.jpg" width="612" height="612" filter="url(#pink-fingerprint)" />
                     </svg>
 
                     <!-- Линия лазера -->
@@ -117,6 +134,9 @@
         </div>
 
     </div>
+
+    <!-- Контейнер для летящих сердечек (перенесен вниз и поверх всего) -->
+    <div id="hearts-container" class="fixed inset-0 pointer-events-none z-[9999] overflow-hidden hidden"></div>
 
     <!-- Логика приложения (Vanilla JS) -->
     <script>
