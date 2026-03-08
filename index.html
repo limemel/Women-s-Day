@@ -562,10 +562,10 @@
                     window.Telegram.WebApp.expand();
                 }
             } catch(e) {}
-            // const savedIndex = localStorage.getItem('springAuraResultIndex');
-            // if (savedIndex !== null) {
-            //     showResultView(parseInt(savedIndex, 10));
-            // }
+            const savedIndex = localStorage.getItem('springAuraResultIndex');
+            if (savedIndex !== null) {
+                showResultView(parseInt(savedIndex, 10));
+            }
         };
 
         const triggerFinishVibe = () => {
@@ -649,7 +649,7 @@
 
             const randomIndex = Math.floor(Math.random() * AURA_PREDICTIONS.length);
 
-            // localStorage.setItem('springAuraResultIndex', randomIndex.toString());
+            localStorage.setItem('springAuraResultIndex', randomIndex.toString());
 
             setTimeout(() => {
                 showResultView(randomIndex);
