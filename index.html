@@ -2,7 +2,10 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Весенняя Аура 2026</title>
     <!-- Подключаем Tailwind CSS для красоты -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -195,11 +198,19 @@
         const resultScreen = document.getElementById('result-screen');
         const mainBg = document.getElementById('main-bg');
         
-        // Вибрация
+        // Вибрация (максимальная поддержка для всех устройств)
         const triggerVibe = (pattern) => {
-            if (window.navigator && window.navigator.vibrate) {
-                window.navigator.vibrate(pattern);
-            }
+            try {
+                if (window.navigator && window.navigator.vibrate) {
+                    window.navigator.vibrate(pattern);
+                } else if (window.navigator && window.navigator.webkitVibrate) {
+                    window.navigator.webkitVibrate(pattern);
+                } else if (window.navigator && window.navigator.mozVibrate) {
+                    window.navigator.mozVibrate(pattern);
+                } else if (window.navigator && window.navigator.msVibrate) {
+                    window.navigator.msVibrate(pattern);
+                }
+            } catch(e) {}
         };
 
         // Переход в полноэкранный режим
@@ -211,10 +222,28 @@
                         elem.requestFullscreen().catch(e => {});
                     } else if (elem.webkitRequestFullscreen) { /* Safari */
                         elem.webkitRequestFullscreen().catch(e => {});
+                    } else if (elem.mozRequestFullScreen) {
+                        elem.mozRequestFullScreen().catch(e => {});
+                    } else if (elem.msRequestFullscreen) {
+                        elem.msRequestFullscreen().catch(e => {});
                     }
                 }
             } catch (e) {}
         };
+
+        // РАЗВОРАЧИВАЕМ СРАЗУ ПРИ ОТКРЫТИИ (вызываем напрямую)
+        requestFullscreen();
+        window.addEventListener('load', requestFullscreen);
+        document.addEventListener('DOMContentLoaded', requestFullscreen);
+
+        // Страховка на первый тап (если браузер жестко заблокировал авто-разворот до клика)
+        const enableFullscreenOnFirstTouch = () => {
+            requestFullscreen();
+            document.removeEventListener('touchstart', enableFullscreenOnFirstTouch);
+            document.removeEventListener('click', enableFullscreenOnFirstTouch);
+        };
+        document.addEventListener('touchstart', enableFullscreenOnFirstTouch, {passive: true});
+        document.addEventListener('click', enableFullscreenOnFirstTouch);
 
         // Генерация сердечек
         const generateHearts = () => {
